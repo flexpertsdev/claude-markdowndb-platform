@@ -149,25 +149,41 @@ app.post('/api/chat', async (req, res) => {
     
     console.log(`Processing chat for user ${userId}: ${message}`);
     
-    // Run Claude Code with user's workspace
+    // Run Claude Code with user's workspace in streaming mode
     const iterator = claudeCode({
       prompt: message,
       options: {
         cwd: userWorkspace,
-        outputFormat: 'json',
+        outputFormat: 'stream-json',
         resume: sessionId,
         allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob'],
         apiKey: process.env.ANTHROPIC_API_KEY,
-        print: true, // Non-interactive mode
-        maxTurns: 5 // Limit turns for safety
+        print: true,
+        maxTurns: 5
       }
     });
     
-    // Collect the response
-    let result = null;
+    // Collect all messages from the stream
+    const messages = [];
+    let sessionData = {};
+    
     for await (const chunk of iterator) {
-      result = chunk;
+      if (chunk.type === 'message') {
+        messages.push(chunk);
+      } else if (chunk.type === 'result') {
+        sessionData = chunk;
+      }
     }
+    
+    // Extract the last assistant message
+    const assistantMessages = messages.filter(m => m.role === 'assistant');
+    const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
+    
+    const result = {
+      messages: messages,
+      sessionId: sessionData.sessionId || sessionId,
+      lastMessage: lastAssistantMessage
+    };
     
     res.json({
       success: true,

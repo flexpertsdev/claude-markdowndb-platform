@@ -261,8 +261,14 @@
                     
                     if (data.success && data.result) {
                         // Handle Claude's response
-                        if (data.result.messages) {
-                            // Extract the assistant's response
+                        if (data.result.lastMessage && data.result.lastMessage.content) {
+                            const textContent = data.result.lastMessage.content
+                                .filter(c => c.type === 'text')
+                                .map(c => c.text)
+                                .join('\n');
+                            addMessage('assistant', textContent);
+                        } else if (data.result.messages) {
+                            // Fallback to extracting from all messages
                             const assistantMessages = data.result.messages.filter(m => m.role === 'assistant');
                             const lastMessage = assistantMessages[assistantMessages.length - 1];
                             
