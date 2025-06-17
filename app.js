@@ -149,47 +149,43 @@ app.post('/api/chat', async (req, res) => {
     
     console.log(`Processing chat for user ${userId}: ${message}`);
     
-    // Run Claude Code with user's workspace in streaming mode
-    const iterator = claudeCode({
+    // Try a simpler approach first
+    console.log('Calling Claude Code with:', {
       prompt: message,
-      options: {
-        cwd: userWorkspace,
-        outputFormat: 'stream-json',
-        resume: sessionId,
-        allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob'],
-        apiKey: process.env.ANTHROPIC_API_KEY,
-        print: true,
-        maxTurns: 5
-      }
+      cwd: userWorkspace,
+      apiKey: process.env.ANTHROPIC_API_KEY ? 'Set' : 'Not set'
     });
     
-    // Collect all messages from the stream
-    const messages = [];
-    let sessionData = {};
-    
-    for await (const chunk of iterator) {
-      if (chunk.type === 'message') {
-        messages.push(chunk);
-      } else if (chunk.type === 'result') {
-        sessionData = chunk;
+    try {
+      // Run Claude Code with simpler options first
+      const iterator = claudeCode({
+        prompt: message,
+        options: {
+          cwd: userWorkspace,
+          outputFormat: 'json',
+          allowedTools: ['Read', 'Write', 'Edit'],
+          print: true
+        }
+      });
+      
+      // Collect the response
+      let result = null;
+      for await (const chunk of iterator) {
+        console.log('Received chunk:', chunk);
+        result = chunk;
       }
+      
+      console.log('Final result:', result);
+      
+      res.json({
+        success: true,
+        result: result,
+        workspacePath: userWorkspace
+      });
+    } catch (innerError) {
+      console.error('Error during Claude Code execution:', innerError);
+      throw innerError;
     }
-    
-    // Extract the last assistant message
-    const assistantMessages = messages.filter(m => m.role === 'assistant');
-    const lastAssistantMessage = assistantMessages[assistantMessages.length - 1];
-    
-    const result = {
-      messages: messages,
-      sessionId: sessionData.sessionId || sessionId,
-      lastMessage: lastAssistantMessage
-    };
-    
-    res.json({
-      success: true,
-      result: result,
-      workspacePath: userWorkspace
-    });
     
   } catch (error) {
     console.error('Chat error:', error);
