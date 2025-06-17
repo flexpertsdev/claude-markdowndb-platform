@@ -1,0 +1,25 @@
+{
+  "name": "claude-markdowndb-platform",
+  "version": "1.0.0",
+  "description": "A scalable platform for AI-powered development using Claude Code SDK and MarkdownDB.",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "start-old": "node server.js",
+    "frontend": "node serve-frontend.js",
+    "dev": "nodemon app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.25",
+    "chokidar": "^4.0.3",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "mddb": "^0.9.5",
+    "multer": "^2.0.1"
+  }
+}
