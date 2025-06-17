@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A scalable platform for AI-powered development using Claude Code SDK and MarkdownDB.",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node app.js",
     "start-old": "node server.js",

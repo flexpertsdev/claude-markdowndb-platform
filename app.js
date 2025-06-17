@@ -1,11 +1,18 @@
-const express = require('express');
-const cors = require('cors');
-const path = require('path');
-const fs = require('fs').promises;
-const { claudeCode } = require('@anthropic-ai/claude-code');
-const { MarkdownDB } = require('mddb');
-const multer = require('multer');
-require('dotenv').config();
+import express from 'express';
+import cors from 'cors';
+import path from 'path';
+import { promises as fs } from 'fs';
+import { query as claudeCode } from '@anthropic-ai/claude-code';
+import { MarkdownDB } from 'mddb';
+import multer from 'multer';
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 app.use(cors());
@@ -143,16 +150,24 @@ app.post('/api/chat', async (req, res) => {
     console.log(`Processing chat for user ${userId}: ${message}`);
     
     // Run Claude Code with user's workspace
-    const result = await claudeCode({
-      cwd: userWorkspace,
-      input: message,
-      outputFormat: 'json',
-      resume: sessionId,
-      allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob'],
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      print: true, // Non-interactive mode
-      maxTurns: 5 // Limit turns for safety
+    const iterator = claudeCode({
+      prompt: message,
+      options: {
+        cwd: userWorkspace,
+        outputFormat: 'json',
+        resume: sessionId,
+        allowedTools: ['Read', 'Write', 'Edit', 'Bash', 'Grep', 'Glob'],
+        apiKey: process.env.ANTHROPIC_API_KEY,
+        print: true, // Non-interactive mode
+        maxTurns: 5 // Limit turns for safety
+      }
     });
+    
+    // Collect the response
+    let result = null;
+    for await (const chunk of iterator) {
+      result = chunk;
+    }
     
     res.json({
       success: true,
